@@ -48,8 +48,8 @@ class Fruit:
     fruit_spawned = True
 
     def generate_new_fruit(self):
-        self.x = random.randint(60, 1280 - 60)
-        self.y = random.randint(60, 960 - 60)
+        self.x = random.randrange(60, 1280 - 60, 20)
+        self.y = random.randrange(60, 960 - 60, 20)
 
 
 def main():
@@ -67,6 +67,8 @@ def main():
     clock = pygame.time.Clock()
 
     direction = "right"
+
+    font = pygame.font.SysFont("montserrat", 30)
 
     while running:
         for event in pygame.event.get():
@@ -86,8 +88,12 @@ def main():
 
         screen.fill((0, 0, 0))
 
-        for body in snake.body:
-            pygame.draw.rect(screen, (255, 255, 255), (body[0], body[1], cube_height, cube_width))
+        counter = 0
+        gradient_rate = 255 // (len(snake.body) * 2)
+        for body in snake.body[::-1]:
+            colour = (255 - (counter * gradient_rate), 255 - (counter * gradient_rate), 255 - (counter * gradient_rate))
+            pygame.draw.rect(screen, colour, (body[0], body[1], cube_height, cube_width))
+            counter += 1
 
         if direction == "right":
             snake.move_right()
@@ -100,9 +106,14 @@ def main():
 
         if fruit.fruit_spawned:
             fruit.generate_new_fruit()
+            while [fruit.x, fruit.y] in snake.body:
+                fruit.generate_new_fruit()
             fruit.fruit_spawned = False
 
         pygame.draw.rect(screen, (255, 0, 0), (fruit.x, fruit.y, cube_height, cube_width))
+
+        score_text = font.render("SCORE: " + str(score), True, (255, 255, 255))
+        screen.blit(score_text, (580, 20))
 
         if pygame.Rect(snake.body[-1][0], snake.body[-1][1], cube_height, cube_width).colliderect\
                 (fruit.x, fruit.y, cube_height, cube_width):
@@ -111,18 +122,29 @@ def main():
         else:
             snake.update()
 
+        if not check_border_death(snake) or not check_body_death(snake):
+            running = False
+
         pygame.display.update()
-        clock.tick(20)
+        clock.tick(15)
 
     pygame.quit()
 
 
-def check_border_death():
-    return None
+def check_border_death(snake):
+    if snake.body[-1][0] + cube_width <= 0 or snake.body[-1][0] >= 1280:
+        return False
+    if snake.body[-1][1] + cube_width <= 0 or snake.body[-1][1] >= 960:
+        return False
+    return True
 
 
-def check_body_death():
-    return None
+def check_body_death(snake):
+    for body in snake.body[:len(snake.body) - 1]:
+        if pygame.Rect(snake.body[-1][0], snake.body[-1][1], cube_height, cube_width).colliderect \
+                    (body[0], body[1], cube_height, cube_width):
+            return False
+    return True
 
 
 if __name__ == "__main__":
